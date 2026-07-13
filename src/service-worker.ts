@@ -1,9 +1,8 @@
-import { openai_api_key } from './dev-secrets';
 import { AnkiConnect } from './anki';
-import { OpenAIConnect } from './oai';
+import { DeepLConnect } from './translate';
 
 const ankiConnect = new AnkiConnect("http://localhost:8765")
-const oaiConnect = new OpenAIConnect(openai_api_key)
+const deeplConnect = new DeepLConnect();
 
 const DEFAULT_CONFIG: OCRConfig = {
     vocabURL: chrome.runtime.getURL('vocab.txt'),
@@ -19,6 +18,45 @@ const DEFAULT_CONFIG: OCRConfig = {
 let activeTabs = [];
 let disabledTabs = [];
 const sessionState = await chrome.storage.session.get(["activeTabs", "disabledTabs"]);
+
+async function getDeepLApiKey(): Promise<string> {
+    const settings = await chrome.storage.local.get(['deeplApiKey']);
+    return (settings.deeplApiKey as string) || '';
+}
+
+async function triggerCaptureInTab(tabId: number) {
+    if (!tabId) {
+        return;
+    }
+
+    try {
+        await chrome.tabs.sendMessage(tabId, { type: 'ActivateCapture' } as ActivateCaptureRequest);
+    } catch (error) {
+        console.warn('Could not activate capture in tab', tabId, error);
+    }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.removeAll(() => {
+        chrome.contextMenus.create({
+            id: 'manga-ocr-capture',
+            title: 'OCR & Translate selection',
+            contexts: ['page', 'image']
+        });
+    });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'manga-ocr-capture' && tab?.id) {
+        void triggerCaptureInTab(tab.id);
+    }
+});
+
+chrome.commands.onCommand.addListener((command, tab) => {
+    if (command === 'activate-capture' && tab?.id) {
+        void triggerCaptureInTab(tab.id);
+    }
+});
 if (sessionState.activeTabs) {
     activeTabs = sessionState.activeTabs;
 }
@@ -124,21 +162,22 @@ chrome.runtime.onMessage.addListener(
             const tabId = payload.tabId;
             chrome.tabs.sendMessage(tabId, message);
         } else if (message.type === 'TranslationRequest') {
-            console.log("attempting to query openai for translation");
+            console.log("attempting to query DeepL for translation");
             const messages = message.payload.messages as string[];
-            let result = null
-            let failed = false
+            const apiKey = await getDeepLApiKey();
+            let result: string[] = [];
+            let failed = false;
             try {
-                result = await oaiConnect.translate(messages)
+                result = await deeplConnect.translate(messages, apiKey)
             } catch (e) {
-                console.error("Error communicating with OAI:", e)
+                console.error("Error communicating with DeepL:", e)
                 failed = true
             }
             
             const response: TranslationResponse = {
                 type: 'TranslationResponse',
                 payload: {
-                    messages: result
+                    messages: result.length > 0 ? result : messages
                 },
                 error: failed
             }
@@ -161,23 +200,19 @@ chrome.runtime.onMessage.addListener(
             }
             chrome.tabs.sendMessage(sender.tab.id, response);
         } else if (message.type === 'VocabRequest') {
-            console.log("attempting to query openai for vocabulary");
             const text = message.payload.text
-            const result = await oaiConnect.vocab(text)
             const response: SingleResponse = {
                 type: 'VocabResponse',
                 payload: {
-                    result,
+                    result: text,
                     index: message.payload.index
                 }
             }
             chrome.tabs.sendMessage(sender.tab.id, response);
         } else if (message.type === 'TranslateOneRequest') {
-            console.log("attempting to query openai for vocabulary");
             const text = message.payload.text
-            const context = message.payload.context
-            const result = await oaiConnect.translateOne(text,context)
-            //Send translation response back
+            const apiKey = await getDeepLApiKey();
+            const result = (await deeplConnect.translate([text], apiKey))[0] || text;
             const response: SingleResponse = {
                 type: 'TranslateOneResponse',
                 payload: {
@@ -185,6 +220,24 @@ chrome.runtime.onMessage.addListener(
                     index: message.payload.index
                 }
             }
+            chrome.tabs.sendMessage(sender.tab.id, response);
+        } else if (message.type === 'SettingsSave') {
+            const payload = message.payload as any;
+            if (payload.deepLApiKey !== undefined) {
+                await chrome.storage.local.set({ deeplApiKey: payload.deepLApiKey });
+            }
+            if (payload.displayMode !== undefined) {
+                await chrome.storage.local.set({ displayMode: payload.displayMode });
+            }
+        } else if (message.type === 'SettingsGet') {
+            const settings = await chrome.storage.local.get(['deeplApiKey', 'displayMode']);
+            const response: SettingsGetResponse = {
+                type: 'SettingsGetResponse',
+                payload: {
+                    deepLApiKey: (settings.deeplApiKey as string) || '',
+                    displayMode: (settings.displayMode as 'overlay' | 'sidepanel') || 'overlay'
+                }
+            };
             chrome.tabs.sendMessage(sender.tab.id, response);
         }
     }

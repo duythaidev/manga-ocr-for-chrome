@@ -45,6 +45,9 @@ chrome.runtime.onMessage.addListener(async function(request, sender, sendRespons
     } else if (response.type === 'DisableOCR') {
         controller.hide();
         debugWindow.hide();
+    } else if (response.type === 'ActivateCapture') {
+        controller.show();
+        bridge.newCapture(new MouseEvent('click'));
     }
 });
 
@@ -181,6 +184,40 @@ const toast = (message: string) => {
 const pluginDiv = document.createElement('div');
 pluginDiv.classList.add("ocr-extension-root");
 document.body.append(pluginDiv);
+
+const floatingButton = document.createElement('button');
+floatingButton.classList.add('floating-action-button');
+floatingButton.textContent = 'OCR';
+floatingButton.title = 'Start OCR capture';
+floatingButton.addEventListener('click', () => {
+    controller.show();
+    bridge.newCapture(new MouseEvent('click'));
+});
+pluginDiv.appendChild(floatingButton);
+
+const applyUiSettings = () => {
+    chrome.storage.local.get(['showFloatingButton', 'displayMode']).then((settings) => {
+        const showButton = settings.showFloatingButton !== false;
+        floatingButton.style.display = showButton ? 'inline-flex' : 'none';
+        pluginDiv.classList.toggle('display-mode-sidepanel', settings.displayMode === 'sidepanel');
+    });
+};
+
+applyUiSettings();
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') {
+        return;
+    }
+
+    if (changes.showFloatingButton) {
+        const showButton = changes.showFloatingButton.newValue !== false;
+        floatingButton.style.display = showButton ? 'inline-flex' : 'none';
+    }
+
+    if (changes.displayMode) {
+        pluginDiv.classList.toggle('display-mode-sidepanel', changes.displayMode.newValue === 'sidepanel');
+    }
+});
 
 // Add UI elements
 const controller = new OCRControlElement(pluginDiv, bridge);

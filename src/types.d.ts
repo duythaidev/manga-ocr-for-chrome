@@ -5,12 +5,54 @@ interface TranslationRequest {
     }
 }
 
+interface ActivateCaptureRequest {
+    type: 'ActivateCapture'
+}
+
 interface TranslationResponse {
     type: 'TranslationResponse',
     payload: {
         messages: string[]
     },
     error: boolean
+}
+
+interface DeepLTranslationRequest {
+    type: 'DeepLTranslationRequest',
+    payload: {
+        messages: string[],
+        apiKey: string
+    }
+}
+
+interface DeepLTranslationResponse {
+    type: 'DeepLTranslationResponse',
+    payload: {
+        messages: string[]
+    },
+    error: boolean,
+    errorMessage?: string
+}
+
+interface SettingsSaveRequest {
+    type: 'SettingsSave',
+    payload: {
+        deepLApiKey?: string,
+        displayMode?: 'overlay' | 'sidepanel'
+    }
+}
+
+interface SettingsGetRequest {
+    type: 'SettingsGet',
+    payload: {}
+}
+
+interface SettingsGetResponse {
+    type: 'SettingsGetResponse',
+    payload: {
+        deepLApiKey?: string,
+        displayMode?: 'overlay' | 'sidepanel'
+    }
 }
 
 interface AnkiNewCardRequest { 
@@ -95,9 +137,11 @@ interface EnableOCRRequest {
 type Message = TranslationRequest | TranslationResponse | 
     OCRCompleteRequest | ProcessBackendRequest | 
     OCRStartRequest | InitializeOCRRequest |
-    DisableOCRRequest | EnableOCRRequest |
+    DisableOCRRequest | EnableOCRRequest | ActivateCaptureRequest |
     AnkiNewCardRequest | AnkiDeckNamesRequest | AnkiDeckNamesResponse |
-    VocabRequest | TranslateOneRequest | SingleResponse
+    VocabRequest | TranslateOneRequest | SingleResponse |
+    DeepLTranslationRequest | DeepLTranslationResponse |
+    SettingsSaveRequest | SettingsGetRequest | SettingsGetResponse
 
 // For capturing an area on the screen
 interface OCRCaptureParameters {

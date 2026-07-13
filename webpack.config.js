@@ -10,7 +10,8 @@ module.exports = () => {
         entry: {
             offscreen: path.resolve(__dirname, 'out/offscreen.js'),
             "content-script": path.resolve(__dirname, 'out/content-script.js'),
-            "service-worker": path.resolve(__dirname, 'out/service-worker.js')
+            "service-worker": path.resolve(__dirname, 'out/service-worker.js'),
+            popup: path.resolve(__dirname, 'out/popup.js')
         },
         output: {
             path: path.resolve(__dirname, 'dist'),

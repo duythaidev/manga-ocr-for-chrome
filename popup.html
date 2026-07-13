@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Manga OCR Settings</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 16px; min-width: 320px; }
+      label { display: block; margin-top: 12px; font-weight: 600; }
+      input, select, button { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+      .hint { font-size: 0.9rem; color: #555; margin-top: 6px; }
+      #settings-status { margin-top: 12px; color: #1b5e20; min-height: 1.2rem; }
+    </style>
+  </head>
+  <body>
+    <h2>Manga OCR Settings</h2>
+    <label for="deepl-api-key">DeepL API key</label>
+    <input id="deepl-api-key" type="password" placeholder="Enter DeepL API key" />
+    <div class="hint">Use a free or Pro key from DeepL.</div>
+
+    <label for="display-mode">Display mode</label>
+    <select id="display-mode">
+      <option value="overlay">Overlay</option>
+      <option value="sidepanel">Side panel</option>
+    </select>
+
+    <label><input id="show-floating-button" type="checkbox" checked /> Show floating OCR button</label>
+
+    <button id="save-settings" type="button">Save settings</button>
+    <div id="settings-status"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

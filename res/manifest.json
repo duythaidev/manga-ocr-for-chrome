@@ -14,11 +14,27 @@
         "scripting",
         "tabCapture",
         "offscreen",
-        "storage"
+        "storage",
+        "contextMenus",
+        "commands"
     ],
-    "action": {},
+    "host_permissions": [
+        "https://api-free.deepl.com/*",
+        "https://api.deepl.com/*"
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
     "background": {
         "service_worker": "service-worker.js"
+    },
+    "commands": {
+        "activate-capture": {
+            "suggested_key": {
+                "default": "Alt+C"
+            },
+            "description": "Start OCR capture"
+        }
     },
     "web_accessible_resources": [{
         "resources": [
