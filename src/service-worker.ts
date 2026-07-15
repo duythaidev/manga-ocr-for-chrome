@@ -109,19 +109,23 @@ function toggleTab(tabId: number) {
 }
 
 async function initializeOffscreen(): Promise<string> {
-    await chrome.offscreen.createDocument({
-        url: 'offscreen.html',
-        reasons: [chrome.offscreen.Reason.USER_MEDIA],
-        justification: 'Background processing of OCR requests'
-    })
+    try {
+        await chrome.offscreen.createDocument({
+            url: 'offscreen.html',
+            reasons: [chrome.offscreen.Reason.BLOBS],
+            justification: 'Image processing for OCR'
+        });
+    } catch (e) {
+        console.warn('Offscreen document may already exist, continuing...', e);
+    }
 
     //Send initialization request
     const request: Message = {
         type: 'InitializeOCR',
         payload: DEFAULT_CONFIG
     };
-    const result = await chrome.runtime.sendMessage(request);
-    return result;
+    const result = await chrome.runtime.sendMessage(request) as string;
+    return result || "NOT OK";
 }
 
 

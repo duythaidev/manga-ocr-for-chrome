@@ -4,23 +4,26 @@ import { OCRModel } from "./ocr";
 const ocr = new OCRModel();
 const queue = require('fastq').promise(takeCapture, 1);
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.debug("Received message in offscreen handler ", request, sender);
     const message = request as Message;
     if (message.type === 'InitializeOCR') {
         const config = message.payload as OCRConfig;
-        const result = await ocr.init(config);
-        sendResponse(result);
+        ocr.init(config).then(result => {
+            sendResponse(result);
+        });
+        return true; // keep channel open for async response
     }
     if (message.type === 'ProcessBackend') {
         const payload = message.payload as CaptureRequest;
-        const result = await queue.push(payload);
-        const response: OCRCompleteRequest = {
-            type: 'OCRComplete',
-            payload: { ...payload, text: result.text },
-            debug: result.debug
-        };
-        chrome.runtime.sendMessage(response);
+        queue.push(payload).then(result => {
+            const response: OCRCompleteRequest = {
+                type: 'OCRComplete',
+                payload: { ...payload, text: result.text },
+                debug: result.debug
+            };
+            chrome.runtime.sendMessage(response);
+        });
     }
 });
 

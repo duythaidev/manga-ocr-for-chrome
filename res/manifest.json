@@ -20,7 +20,8 @@
     ],
     "host_permissions": [
         "https://api-free.deepl.com/*",
-        "https://api.deepl.com/*"
+        "https://api.deepl.com/*",
+        "<all_urls>"
     ],
     "action": {
         "default_popup": "popup.html"
@@ -28,6 +29,12 @@
     "background": {
         "service_worker": "service-worker.js"
     },
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "js": ["content-script.js"],
+        "css": ["style.css"],
+        "run_at": "document_end"
+    }],
     "commands": {
         "activate-capture": {
             "suggested_key": {
@@ -38,12 +45,8 @@
     },
     "web_accessible_resources": [{
         "resources": [
-            "ort-wasm.wasm", 
-            "ort-wasm-threaded.wasm", 
-            "ort-wasm-simd.wasm",
-            "ort-wasm-simd.jsep.wasm",
-            "ort-wasm-simd-threaded.wasm",
-            "ort-wasm-simd-threaded.jsep.wasm",
+            "*.wasm",
+            "*.mjs",
             "vocab.txt",
             "sample.csv",
             "encoder_model.onnx",
